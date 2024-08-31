@@ -3,11 +3,14 @@ import {
     WITHDRAW_FUNDS,
     UPDATE_BALANCE,
     ADD_TRANSACTION,
+    SET_TRANSACTIONS,
+    SET_ERROR
 } from '../actions/walletActions';
 
 const initialState = {
     balance: 0,
     transactions: [],
+    error: null,
 };
 
 const walletReducer = (state = initialState, action) => {
@@ -31,6 +34,16 @@ const walletReducer = (state = initialState, action) => {
             return {
                 ...state,
                 transactions: [action.payload, ...state.transactions],
+            };
+        case SET_TRANSACTIONS:
+            return {
+                ...state,
+                transactions: action.payload,
+            };
+        case SET_ERROR:
+            return {
+                ...state,
+                error: action.payload,
             };
         default:
             return state;

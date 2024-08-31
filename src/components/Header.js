@@ -10,14 +10,17 @@ function Header() {
                     Wallet System
                 </Heading>
                 <Flex>
+                    <Button as={Link} to="/" variant="ghost" color="white">
+                        Home
+                    </Button>
+                    <Button as={Link} to="/transactions" variant="ghost" color="white">
+                        Transactions
+                    </Button>
                     <Button as={Link} to="/login" variant="ghost" color="white">
                         Login
                     </Button>
                     <Button as={Link} to="/register" variant="ghost" color="white">
                         Register
-                    </Button>
-                    <Button as={Link} to="/transactions" variant="ghost" color="white">
-                        Transactions
                     </Button>
                 </Flex>
             </Flex>

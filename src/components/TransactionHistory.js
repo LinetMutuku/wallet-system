@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Box, VStack, Heading, Table, Thead, Tbody, Tr, Th, Td, Text, Badge } from '@chakra-ui/react';
+import { Box, VStack, Heading, Table, Thead, Tbody, Tr, Th, Td, Text, Badge, Alert, AlertIcon } from '@chakra-ui/react';
 import { initializeWallet } from '../redux/actions/walletActions';
 
 const TransactionHistory = () => {
-    const transactions = useSelector(state => state.wallet.transactions);
+    const { transactions, error } = useSelector(state => state.wallet);
     const dispatch = useDispatch();
 
     useEffect(() => {
@@ -15,6 +15,14 @@ const TransactionHistory = () => {
         <Box bg="white" p={6} borderRadius="lg" boxShadow="xl">
             <VStack spacing={6} align="stretch">
                 <Heading as="h2" size="xl" textAlign="center">Transaction History</Heading>
+
+                {error && (
+                    <Alert status="error">
+                        <AlertIcon />
+                        {error}
+                    </Alert>
+                )}
+
                 <Table variant="simple">
                     <Thead>
                         <Tr>

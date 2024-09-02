@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Box, VStack, Heading, Text, Button, Input, Select, useToast, HStack, StackDivider } from '@chakra-ui/react';
+import {
+    Box, VStack, Heading, Text, Button, Input, Select, useToast,
+    HStack, StackDivider, useColorModeValue, Fade
+} from '@chakra-ui/react';
 import { withdrawFunds, updateBalance, addTransaction } from '../redux/actions/walletActions';
 
 const PurchaseIntegration = () => {
@@ -9,6 +12,9 @@ const PurchaseIntegration = () => {
     const balance = useSelector(state => state.wallet.balance);
     const dispatch = useDispatch();
     const toast = useToast();
+
+    const bgColor = useColorModeValue('gray.100', 'gray.700');
+    const textColor = useColorModeValue('gray.800', 'white');
 
     const handlePurchase = async () => {
         if (amount && Number(amount) > 0 && Number(amount) <= balance && item) {
@@ -52,12 +58,21 @@ const PurchaseIntegration = () => {
     };
 
     return (
-        <Box bg="gray.100" p={8} borderRadius="lg" boxShadow="lg" maxW="lg" mx="auto">
+        <Box bg={bgColor} p={8} borderRadius="lg" boxShadow="lg" maxW="lg" mx="auto">
             <VStack spacing={8} align="stretch" divider={<StackDivider borderColor="gray.200" />}>
-                <Heading as="h2" size="lg" textAlign="center">Make a Purchase</Heading>
-                <Text fontSize="xl" textAlign="center">Available Balance: <Text as="span" fontWeight="bold">Kshs {balance.toFixed(2)}</Text></Text>
+                <Heading as="h2" size="lg" textAlign="center" color={textColor}>Make a Purchase</Heading>
+                <Fade in={true}>
+                    <Text fontSize="xl" textAlign="center" color={textColor}>
+                        Available Balance: <Text as="span" fontWeight="bold">Kshs {balance.toFixed(2)}</Text>
+                    </Text>
+                </Fade>
                 <VStack spacing={4}>
-                    <Select placeholder="Select item" value={item} onChange={(e) => setItem(e.target.value)}>
+                    <Select
+                        placeholder="Select item"
+                        value={item}
+                        onChange={(e) => setItem(e.target.value)}
+                        bg={useColorModeValue('white', 'gray.600')}
+                    >
                         <option value="Item 1">Item 1 - Kshs 10</option>
                         <option value="Item 2">Item 2 - Kshs 20</option>
                         <option value="Item 3">Item 3 - Kshs 30</option>
@@ -67,10 +82,18 @@ const PurchaseIntegration = () => {
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         type="number"
+                        bg={useColorModeValue('white', 'gray.600')}
                     />
                 </VStack>
                 <HStack justifyContent="center" pt={4}>
-                    <Button colorScheme="blue" onClick={handlePurchase} size="lg">Complete Purchase</Button>
+                    <Button
+                        colorScheme="blue"
+                        onClick={handlePurchase}
+                        size="lg"
+                        isDisabled={!amount || !item || Number(amount) > balance}
+                    >
+                        Complete Purchase
+                    </Button>
                 </HStack>
             </VStack>
         </Box>

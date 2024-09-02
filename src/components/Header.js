@@ -13,6 +13,9 @@ function Header() {
                     <Button as={Link} to="/" variant="ghost" color="white">
                         Home
                     </Button>
+                    <Button as={Link} to="/dashboard" variant="ghost" color="white">
+                        Dashboard
+                    </Button>
                     <Button as={Link} to="/transactions" variant="ghost" color="white">
                         Transactions
                     </Button>

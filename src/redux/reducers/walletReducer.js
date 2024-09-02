@@ -3,6 +3,7 @@ import {
     WITHDRAW_FUNDS,
     UPDATE_BALANCE,
     ADD_TRANSACTION,
+    DELETE_TRANSACTION,
     SET_TRANSACTIONS,
     SET_ERROR,
     SET_LOADING
@@ -36,6 +37,11 @@ const walletReducer = (state = initialState, action) => {
             return {
                 ...state,
                 transactions: [action.payload, ...state.transactions],
+            };
+        case DELETE_TRANSACTION:
+            return {
+                ...state,
+                transactions: state.transactions.filter(transaction => transaction.id !== action.payload),
             };
         case SET_TRANSACTIONS:
             return {

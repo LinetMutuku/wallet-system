@@ -4,13 +4,15 @@ import {
     UPDATE_BALANCE,
     ADD_TRANSACTION,
     SET_TRANSACTIONS,
-    SET_ERROR
+    SET_ERROR,
+    SET_LOADING
 } from '../actions/walletActions';
 
 const initialState = {
     balance: 0,
     transactions: [],
     error: null,
+    loading: false,
 };
 
 const walletReducer = (state = initialState, action) => {
@@ -44,6 +46,11 @@ const walletReducer = (state = initialState, action) => {
             return {
                 ...state,
                 error: action.payload,
+            };
+        case SET_LOADING:
+            return {
+                ...state,
+                loading: action.payload,
             };
         default:
             return state;

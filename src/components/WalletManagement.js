@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Box, VStack, Heading, Button, Input, useToast, HStack, Stat, StatLabel, StatNumber, StatHelpText, StatArrow } from '@chakra-ui/react';
+import {
+    Box, VStack, Heading, Button, Input, useToast, HStack,
+    Stat, StatLabel, StatNumber, StatHelpText, StatArrow,
+    CircularProgress, CircularProgressLabel, Text
+} from '@chakra-ui/react';
 import { addFunds, withdrawFunds, initializeWallet } from '../redux/actions/walletActions';
 
 const WalletManagement = () => {
@@ -61,18 +65,31 @@ const WalletManagement = () => {
         }
     };
 
+    const maxBalance = 10000; // Example max balance
+    const percentage = (balance / maxBalance) * 100;
+
     return (
         <Box bg="white" p={6} borderRadius="lg" boxShadow="xl">
             <VStack spacing={8} align="stretch">
                 <Heading as="h2" size="xl" textAlign="center">Wallet Management</Heading>
-                <Stat>
-                    <StatLabel fontSize="xl">Current Balance</StatLabel>
-                    <StatNumber fontSize="4xl"> Kshs {balance.toFixed(2)}</StatNumber>
-                    <StatHelpText>
-                        <StatArrow type={balance > 0 ? 'increase' : 'decrease'} />
-                        {balance > 0 ? 'Positive' : 'Negative'} balance
-                    </StatHelpText>
-                </Stat>
+                <HStack spacing={8} justify="center">
+                    <CircularProgress value={percentage} size="120px" thickness="8px" color="green.400">
+                        <CircularProgressLabel>
+                            <VStack spacing={0}>
+                                <Text fontSize="sm">Balance</Text>
+                                <Text fontSize="xl" fontWeight="bold">Kshs {balance.toFixed(2)}</Text>
+                            </VStack>
+                        </CircularProgressLabel>
+                    </CircularProgress>
+                    <Stat>
+                        <StatLabel fontSize="xl">Current Balance</StatLabel>
+                        <StatNumber fontSize="4xl">Kshs {balance.toFixed(2)}</StatNumber>
+                        <StatHelpText>
+                            <StatArrow type={balance > 0 ? 'increase' : 'decrease'} />
+                            {balance > 0 ? 'Positive' : 'Negative'} balance
+                        </StatHelpText>
+                    </Stat>
+                </HStack>
                 <Input
                     placeholder="Enter amount"
                     value={amount}

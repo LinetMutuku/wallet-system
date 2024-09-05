@@ -1,6 +1,7 @@
 import {
     ADD_FUNDS,
     WITHDRAW_FUNDS,
+    MAKE_PURCHASE,
     UPDATE_BALANCE,
     ADD_TRANSACTION,
     DELETE_TRANSACTION,
@@ -24,9 +25,10 @@ const walletReducer = (state = initialState, action) => {
                 balance: state.balance + action.payload,
             };
         case WITHDRAW_FUNDS:
+        case MAKE_PURCHASE:
             return {
                 ...state,
-                balance: state.balance - action.payload,
+                balance: state.balance - action.payload.amount,
             };
         case UPDATE_BALANCE:
             return {

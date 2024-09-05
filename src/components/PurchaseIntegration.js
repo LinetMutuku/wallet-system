@@ -1,34 +1,37 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-    Box, VStack, Heading, Text, Button, Input, Select, useToast,
+    Box, VStack, Heading, Text, Button, Input, useToast,
     HStack, StackDivider, useColorModeValue, Fade
 } from '@chakra-ui/react';
-import { withdrawFunds, updateBalance, addTransaction } from '../redux/actions/walletActions';
+import { makePurchase } from '../redux/actions/walletActions';
 
 const PurchaseIntegration = () => {
+    // State for amount and item name
     const [amount, setAmount] = useState('');
-    const [item, setItem] = useState('');
+    const [itemName, setItemName] = useState('');
+
+    // Get balance from Redux store
     const balance = useSelector(state => state.wallet.balance);
     const dispatch = useDispatch();
     const toast = useToast();
 
+    // Color mode values
     const bgColor = useColorModeValue('gray.100', 'gray.700');
     const textColor = useColorModeValue('gray.800', 'white');
 
+    // Handle purchase function
     const handlePurchase = async () => {
-        if (amount && Number(amount) > 0 && Number(amount) <= balance && item) {
+        if (amount && Number(amount) > 0 && Number(amount) <= balance && itemName) {
             try {
-                await dispatch(withdrawFunds(Number(amount)));
-                dispatch(updateBalance(balance - Number(amount)));
-                dispatch(addTransaction({
-                    type: 'purchase',
-                    amount: Number(amount),
-                    item: item,
-                    date: new Date().toISOString()
-                }));
+                // Dispatch makePurchase action
+                await dispatch(makePurchase(Number(amount), itemName));
+
+                // Reset form fields
                 setAmount('');
-                setItem('');
+                setItemName('');
+
+                // Show success toast
                 toast({
                     title: 'Purchase successful',
                     status: 'success',
@@ -37,6 +40,7 @@ const PurchaseIntegration = () => {
                     position: 'top-right',
                 });
             } catch (error) {
+                // Show error toast
                 toast({
                     title: error.message || 'Error occurred during purchase',
                     status: 'error',
@@ -46,6 +50,7 @@ const PurchaseIntegration = () => {
                 });
             }
         } else {
+            // Show invalid purchase toast
             toast({
                 title: 'Invalid purchase',
                 description: 'Please make sure all fields are filled and you have enough balance.',
@@ -67,16 +72,12 @@ const PurchaseIntegration = () => {
                     </Text>
                 </Fade>
                 <VStack spacing={4}>
-                    <Select
-                        placeholder="Select item"
-                        value={item}
-                        onChange={(e) => setItem(e.target.value)}
+                    <Input
+                        placeholder="Enter item name"
+                        value={itemName}
+                        onChange={(e) => setItemName(e.target.value)}
                         bg={useColorModeValue('white', 'gray.600')}
-                    >
-                        <option value="Item 1">Item 1 - Kshs 10</option>
-                        <option value="Item 2">Item 2 - Kshs 20</option>
-                        <option value="Item 3">Item 3 - Kshs 30</option>
-                    </Select>
+                    />
                     <Input
                         placeholder="Enter amount"
                         value={amount}
@@ -90,7 +91,7 @@ const PurchaseIntegration = () => {
                         colorScheme="blue"
                         onClick={handlePurchase}
                         size="lg"
-                        isDisabled={!amount || !item || Number(amount) > balance}
+                        isDisabled={!amount || !itemName || Number(amount) > balance}
                     >
                         Complete Purchase
                     </Button>

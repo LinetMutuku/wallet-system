@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
     Box, VStack, Heading, Table, Thead, Tbody, Tr, Th, Td, Text,
@@ -7,13 +7,13 @@ import {
     ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton,
     Stat, StatLabel, StatNumber, useToast
 } from '@chakra-ui/react';
-import { ChevronLeftIcon, ChevronRightIcon, RepeatIcon } from '@chakra-ui/icons';
-import { addTransaction, setError, withdrawFunds, addFunds } from '../redux/actions/walletActions';
+import { ChevronLeftIcon, ChevronRightIcon, RepeatIcon, DeleteIcon } from '@chakra-ui/icons';
+import { setError, withdrawFunds, addFunds, makePurchase, deleteTransaction, initializeWallet } from '../redux/actions/walletActions';
 
 const TransactionHistory = () => {
     const dispatch = useDispatch();
     const toast = useToast();
-    const { transactions, error, balance } = useSelector(state => state.wallet);
+    const { transactions, error, balance, loading } = useSelector(state => state.wallet);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
     const [searchTerm, setSearchTerm] = useState('');
@@ -23,12 +23,16 @@ const TransactionHistory = () => {
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const { isOpen, onOpen, onClose } = useDisclosure();
 
-    // Filtered and sorted transactions
+    useEffect(() => {
+        dispatch(initializeWallet());
+    }, [dispatch]);
+
     const filteredAndSortedTransactions = useMemo(() => {
-        return transactions
+        return [...transactions]
             .filter(transaction =>
                 (transaction.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     transaction.amount.toString().includes(searchTerm) ||
+                    (transaction.item && transaction.item.toLowerCase().includes(searchTerm.toLowerCase())) ||
                     new Date(transaction.date).toLocaleString().toLowerCase().includes(searchTerm.toLowerCase())) &&
                 (!dateRange.start || new Date(transaction.date) >= new Date(dateRange.start)) &&
                 (!dateRange.end || new Date(transaction.date) <= new Date(dateRange.end))
@@ -59,64 +63,69 @@ const TransactionHistory = () => {
     };
 
     const handleRecurringTransaction = (transaction) => {
-        const recurringTransaction = {
-            ...transaction,
-            date: new Date().toISOString(),
-        };
-        if (transaction.type === 'deposit') {
-            dispatch(addFunds(transaction.amount))
-                .then(() => {
-                    toast({
-                        title: "Recurring deposit added",
-                        status: "success",
-                        duration: 3000,
-                        isClosable: true,
-                    });
-                })
-                .catch(error => {
-                    dispatch(setError(error.message));
-                    toast({
-                        title: "Error adding recurring deposit",
-                        description: error.message,
-                        status: "error",
-                        duration: 3000,
-                        isClosable: true,
-                    });
+        const action = transaction.type === 'deposit' ? addFunds :
+            transaction.type === 'withdrawal' ? withdrawFunds :
+                makePurchase;
+
+        dispatch(action(transaction.amount, transaction.item))
+            .then(() => {
+                toast({
+                    title: `Recurring ${transaction.type} added`,
+                    status: "success",
+                    duration: 3000,
+                    isClosable: true,
                 });
-        } else {
-            dispatch(withdrawFunds(transaction.amount))
-                .then(() => {
-                    toast({
-                        title: "Recurring withdrawal added",
-                        status: "success",
-                        duration: 3000,
-                        isClosable: true,
-                    });
-                })
-                .catch(error => {
-                    dispatch(setError(error.message));
-                    toast({
-                        title: "Error adding recurring withdrawal",
-                        description: error.message,
-                        status: "error",
-                        duration: 3000,
-                        isClosable: true,
-                    });
+            })
+            .catch(error => {
+                dispatch(setError(error.message));
+                toast({
+                    title: `Error adding recurring ${transaction.type}`,
+                    description: error.message,
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
                 });
-        }
+            });
     };
 
-    // Calculate statistics
+    const handleDeleteTransaction = (transaction) => {
+        dispatch(deleteTransaction(transaction.id, transaction.amount, transaction.type))
+            .then(() => {
+                toast({
+                    title: "Transaction deleted",
+                    status: "success",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            })
+            .catch(error => {
+                dispatch(setError(error.message));
+                toast({
+                    title: "Error deleting transaction",
+                    description: error.message,
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            });
+    };
+
     const stats = useMemo(() => {
-        return filteredAndSortedTransactions.reduce((acc, transaction) => {
+        return transactions.reduce((acc, transaction) => {
             if (transaction.type === 'deposit') {
                 acc.totalDeposits += transaction.amount;
-            } else {
+            } else if (transaction.type === 'withdrawal') {
                 acc.totalWithdrawals += transaction.amount;
+            } else if (transaction.type === 'purchase') {
+                acc.totalPurchases += transaction.amount;
             }
             return acc;
-        }, { totalDeposits: 0, totalWithdrawals: 0 });
-    }, [filteredAndSortedTransactions]);
+        }, { totalDeposits: 0, totalWithdrawals: 0, totalPurchases: 0 });
+    }, [transactions]);
+
+    if (loading) {
+        return <Box>Loading...</Box>;
+    }
 
     return (
         <Box bg="white" p={6} borderRadius="lg" boxShadow="xl">
@@ -179,6 +188,10 @@ const TransactionHistory = () => {
                         <StatLabel>Total Withdrawals</StatLabel>
                         <StatNumber color="red.500">Kshs {stats.totalWithdrawals.toFixed(2)}</StatNumber>
                     </Stat>
+                    <Stat>
+                        <StatLabel>Total Purchases</StatLabel>
+                        <StatNumber color="blue.500">Kshs {stats.totalPurchases.toFixed(2)}</StatNumber>
+                    </Stat>
                 </VStack>
 
                 <Table variant="simple">
@@ -193,23 +206,25 @@ const TransactionHistory = () => {
                             <Th cursor="pointer" onClick={() => handleSort('date')}>
                                 Date {sortField === 'date' && (sortOrder === 'asc' ? '▲' : '▼')}
                             </Th>
+                            <Th>Item</Th>
                             <Th>Actions</Th>
                         </Tr>
                     </Thead>
                     <Tbody>
-                        {currentTransactions.map((transaction, index) => (
-                            <Tr key={index}>
+                        {currentTransactions.map((transaction) => (
+                            <Tr key={transaction.id}>
                                 <Td>
-                                    <Badge colorScheme={transaction.type === 'deposit' ? 'green' : 'red'}>
+                                    <Badge colorScheme={transaction.type === 'deposit' ? 'green' : transaction.type === 'purchase' ? 'blue' : 'red'}>
                                         {transaction.type}
                                     </Badge>
                                 </Td>
                                 <Td>
-                                    <Text color={transaction.type === 'deposit' ? 'green.500' : 'red.500'} fontWeight="bold">
+                                    <Text color={transaction.type === 'deposit' ? 'green.500' : transaction.type === 'purchase' ? 'blue.500' : 'red.500'} fontWeight="bold">
                                         {transaction.type === 'deposit' ? '+' : '-'}Kshs {transaction.amount.toFixed(2)}
                                     </Text>
                                 </Td>
                                 <Td>{new Date(transaction.date).toLocaleString()}</Td>
+                                <Td>{transaction.item || '-'}</Td>
                                 <Td>
                                     <Button size="sm" onClick={() => openTransactionDetails(transaction)} mr={2}>
                                         Details
@@ -219,6 +234,14 @@ const TransactionHistory = () => {
                                         size="sm"
                                         onClick={() => handleRecurringTransaction(transaction)}
                                         aria-label="Repeat transaction"
+                                        mr={2}
+                                    />
+                                    <IconButton
+                                        icon={<DeleteIcon />}
+                                        size="sm"
+                                        colorScheme="red"
+                                        onClick={() => handleDeleteTransaction(transaction)}
+                                        aria-label="Delete transaction"
                                     />
                                 </Td>
                             </Tr>
@@ -254,6 +277,7 @@ const TransactionHistory = () => {
                                 <Text><strong>Type:</strong> {selectedTransaction.type}</Text>
                                 <Text><strong>Amount:</strong> Kshs {selectedTransaction.amount.toFixed(2)}</Text>
                                 <Text><strong>Date:</strong> {new Date(selectedTransaction.date).toLocaleString()}</Text>
+                                {selectedTransaction.item && <Text><strong>Item:</strong> {selectedTransaction.item}</Text>}
                             </VStack>
                         )}
                     </ModalBody>

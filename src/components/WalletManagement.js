@@ -68,7 +68,8 @@ const WalletManagement = () => {
     };
 
     const maxBalance = 10000; // Example max balance
-    const percentage = (balance / maxBalance) * 100;
+    const numericBalance = Number(balance) || 0; // Ensure balance is a number
+    const percentage = (numericBalance / maxBalance) * 100;
 
     return (
         <Box>
@@ -82,16 +83,16 @@ const WalletManagement = () => {
                                     <CircularProgressLabel>
                                         <VStack spacing={0}>
                                             <Text fontSize="sm">Balance</Text>
-                                            <Text fontSize="xl" fontWeight="bold">Kshs {balance.toFixed(2)}</Text>
+                                            <Text fontSize="xl" fontWeight="bold">Kshs {numericBalance.toFixed(2)}</Text>
                                         </VStack>
                                     </CircularProgressLabel>
                                 </CircularProgress>
                                 <Stat>
                                     <StatLabel fontSize="xl">Current Balance</StatLabel>
-                                    <StatNumber fontSize="4xl">Kshs {balance.toFixed(2)}</StatNumber>
+                                    <StatNumber fontSize="4xl">Kshs {numericBalance.toFixed(2)}</StatNumber>
                                     <StatHelpText>
-                                        <StatArrow type={balance > 0 ? 'increase' : 'decrease'} />
-                                        {balance > 0 ? 'Positive' : 'Negative'} balance
+                                        <StatArrow type={numericBalance > 0 ? 'increase' : 'decrease'} />
+                                        {numericBalance > 0 ? 'Positive' : 'Negative'} balance
                                     </StatHelpText>
                                 </Stat>
                             </HStack>

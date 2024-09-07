@@ -1,11 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
     Box, VStack, Heading, Table, Thead, Tbody, Tr, Th, Td, Text,
     Badge, Alert, AlertIcon, HStack, IconButton, Select, Input,
     Flex, Spacer, Button, useDisclosure, Modal, ModalOverlay,
     ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton,
-    Stat, StatLabel, StatNumber, useToast
+    Stat, StatLabel, StatNumber, useToast, AlertDialog, AlertDialogBody,
+    AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon, RepeatIcon, DeleteIcon } from '@chakra-ui/icons';
 import { setError, withdrawFunds, addFunds, makePurchase, deleteTransaction, initializeWallet } from '../redux/actions/walletActions';
@@ -22,6 +23,9 @@ const TransactionHistory = () => {
     const [dateRange, setDateRange] = useState({ start: null, end: null });
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+    const [transactionToDelete, setTransactionToDelete] = useState(null);
+    const cancelRef = useRef();
 
     useEffect(() => {
         dispatch(initializeWallet());
@@ -86,6 +90,23 @@ const TransactionHistory = () => {
                     isClosable: true,
                 });
             });
+    };
+
+    const openDeleteConfirmation = (transaction) => {
+        setTransactionToDelete(transaction);
+        setIsDeleteAlertOpen(true);
+    };
+
+    const closeDeleteConfirmation = () => {
+        setIsDeleteAlertOpen(false);
+        setTransactionToDelete(null);
+    };
+
+    const confirmDelete = () => {
+        if (transactionToDelete) {
+            handleDeleteTransaction(transactionToDelete);
+        }
+        closeDeleteConfirmation();
     };
 
     const handleDeleteTransaction = (transaction) => {
@@ -240,7 +261,7 @@ const TransactionHistory = () => {
                                         icon={<DeleteIcon />}
                                         size="sm"
                                         colorScheme="red"
-                                        onClick={() => handleDeleteTransaction(transaction)}
+                                        onClick={() => openDeleteConfirmation(transaction)}
                                         aria-label="Delete transaction"
                                     />
                                 </Td>
@@ -288,6 +309,33 @@ const TransactionHistory = () => {
                     </ModalFooter>
                 </ModalContent>
             </Modal>
+
+            <AlertDialog
+                isOpen={isDeleteAlertOpen}
+                leastDestructiveRef={cancelRef}
+                onClose={closeDeleteConfirmation}
+            >
+                <AlertDialogOverlay>
+                    <AlertDialogContent>
+                        <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                            Delete Transaction
+                        </AlertDialogHeader>
+
+                        <AlertDialogBody>
+                            Are you sure you want to delete this transaction? This action cannot be undone.
+                        </AlertDialogBody>
+
+                        <AlertDialogFooter>
+                            <Button ref={cancelRef} onClick={closeDeleteConfirmation}>
+                                Cancel
+                            </Button>
+                            <Button colorScheme="red" onClick={confirmDelete} ml={3}>
+                                Delete
+                            </Button>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialogOverlay>
+            </AlertDialog>
         </Box>
     );
 };

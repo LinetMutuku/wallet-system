@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
-import { Box, VStack, Heading, Input, Button, useToast, FormControl, FormLabel } from '@chakra-ui/react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase';
-import { useNavigate } from 'react-router-dom';
+import {
+    Box,
+    VStack,
+    Heading,
+    Input,
+    Button,
+    useToast,
+    FormControl,
+    FormLabel,
+    Container,
+    Text,
+    Link as ChakraLink,
+} from '@chakra-ui/react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from '../firebase'; // Adjust this path if needed
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -10,7 +22,8 @@ const Login = () => {
     const toast = useToast();
     const navigate = useNavigate();
 
-    const handleLogin = async () => {
+    const handleLogin = async (e) => {
+        e.preventDefault();
         try {
             await signInWithEmailAndPassword(auth, email, password);
             toast({
@@ -34,30 +47,42 @@ const Login = () => {
     };
 
     return (
-        <Box bg="gray.100" p={8} borderRadius="lg" boxShadow="lg" maxW="lg" mx="auto" mt={10}>
-            <VStack spacing={6}>
-                <Heading as="h2" size="lg">Login</Heading>
-                <FormControl id="email">
-                    <FormLabel>Email</FormLabel>
-                    <Input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your email"
-                    />
-                </FormControl>
-                <FormControl id="password">
-                    <FormLabel>Password</FormLabel>
-                    <Input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter your password"
-                    />
-                </FormControl>
-                <Button colorScheme="blue" onClick={handleLogin} width="full">Login</Button>
-            </VStack>
-        </Box>
+        <Container maxW="md" mt={8}>
+            <Box bg="white" p={8} borderRadius="lg" boxShadow="md">
+                <VStack spacing={6} as="form" onSubmit={handleLogin}>
+                    <Heading as="h2" size="xl">
+                        Login
+                    </Heading>
+                    <FormControl id="email" isRequired>
+                        <FormLabel>Email</FormLabel>
+                        <Input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Enter your email"
+                        />
+                    </FormControl>
+                    <FormControl id="password" isRequired>
+                        <FormLabel>Password</FormLabel>
+                        <Input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter your password"
+                        />
+                    </FormControl>
+                    <Button type="submit" colorScheme="blue" width="full">
+                        Login
+                    </Button>
+                </VStack>
+                <Text mt={4} textAlign="center">
+                    Don't have an account?{' '}
+                    <ChakraLink as={RouterLink} to="/register" color="blue.500">
+                        Register here
+                    </ChakraLink>
+                </Text>
+            </Box>
+        </Container>
     );
 };
 

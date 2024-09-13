@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, VStack, Heading, Input, Button, useToast, FormControl, FormLabel, useColorModeValue } from '@chakra-ui/react';
+import { Box, VStack, Heading, Input, Button, useToast, FormControl, FormLabel } from '@chakra-ui/react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
@@ -9,8 +9,6 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const toast = useToast();
     const navigate = useNavigate();
-    const bgColor = useColorModeValue('gray.50', 'gray.700');
-    const textColor = useColorModeValue('gray.800', 'white');
 
     const handleLogin = async () => {
         try {
@@ -22,10 +20,11 @@ const Login = () => {
                 isClosable: true,
                 position: 'top-right',
             });
-            navigate('/'); // Navigate to home page after successful login
+            navigate('/');
         } catch (error) {
             toast({
-                title: error.message || 'Error during login',
+                title: 'Login failed',
+                description: error.message,
                 status: 'error',
                 duration: 3000,
                 isClosable: true,
@@ -35,32 +34,28 @@ const Login = () => {
     };
 
     return (
-        <Box bg={bgColor} p={8} borderRadius="lg" boxShadow="xl" maxW="md" mx="auto" mt={10}>
+        <Box bg="gray.100" p={8} borderRadius="lg" boxShadow="lg" maxW="lg" mx="auto" mt={10}>
             <VStack spacing={6}>
-                <Heading as="h2" size="xl" color={textColor}>Login</Heading>
+                <Heading as="h2" size="lg">Login</Heading>
                 <FormControl id="email">
-                    <FormLabel color={textColor}>Email</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <Input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="Enter your email"
-                        bg={useColorModeValue('white', 'gray.800')}
                     />
                 </FormControl>
                 <FormControl id="password">
-                    <FormLabel color={textColor}>Password</FormLabel>
+                    <FormLabel>Password</FormLabel>
                     <Input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter your password"
-                        bg={useColorModeValue('white', 'gray.800')}
                     />
                 </FormControl>
-                <Button colorScheme="teal" onClick={handleLogin} width="full" size="lg">
-                    Login
-                </Button>
+                <Button colorScheme="blue" onClick={handleLogin} width="full">Login</Button>
             </VStack>
         </Box>
     );

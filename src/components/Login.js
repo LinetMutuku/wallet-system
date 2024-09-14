@@ -13,19 +13,19 @@ import {
     Link as ChakraLink,
 } from '@chakra-ui/react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from '../firebase'; // Adjust this path if needed
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const toast = useToast();
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            await login(email, password);
             toast({
                 title: 'Login successful',
                 status: 'success',
@@ -33,7 +33,7 @@ const Login = () => {
                 isClosable: true,
                 position: 'top-right',
             });
-            navigate('/');
+            navigate('/'); // Navigate to home page after successful login
         } catch (error) {
             toast({
                 title: 'Login failed',

@@ -19,7 +19,7 @@ const TransactionHistory = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortField, setSortField] = useState('date');
     const [sortOrder, setSortOrder] = useState('desc');
-    const [dateRange, setDateRange] = useState({ start: null, end: null });
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const { isOpen, onOpen, onClose } = useDisclosure();
 

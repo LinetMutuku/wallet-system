@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { setLoginTimestamp, checkSessionValidity, clearSession } from '../utils/sessionUtil';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
+import { setLoginTimestamp, clearSession } from '../utils/sessionUtil';
 
 const AuthContext = createContext();
 
@@ -15,13 +15,7 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user && checkSessionValidity()) {
-                setCurrentUser(user);
-                setLoginTimestamp();
-            } else {
-                setCurrentUser(null);
-                clearSession();
-            }
+            setCurrentUser(user);
             setLoading(false);
         });
 
@@ -29,21 +23,25 @@ export function AuthProvider({ children }) {
     }, []);
 
     const login = async (email, password) => {
-        const result = await auth.signInWithEmailAndPassword(email, password);
-        setLoginTimestamp();
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        setLoginTimestamp(); // Set the login timestamp after successful login
         return result;
     };
 
-    const logout = () => {
-        clearSession();
-        return signOut(auth);
+    const register = (email, password) => {
+        return createUserWithEmailAndPassword(auth, email, password);
+    };
+
+    const logout = async () => {
+        await signOut(auth);
+        clearSession(); // Clear the session when logging out
     };
 
     const value = {
         currentUser,
         login,
+        register,
         logout,
-        loading
     };
 
     return (

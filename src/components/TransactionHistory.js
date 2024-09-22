@@ -48,49 +48,17 @@ const TransactionHistory = () => {
             });
     }, [transactions, searchTerm, sortField, sortOrder, dateRange]);
 
-    const currentTransactions = useMemo(() => {
-        const indexOfLastItem = currentPage * itemsPerPage;
-        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-        return filteredAndSortedTransactions.slice(indexOfFirstItem, indexOfLastItem);
-    }, [currentPage, itemsPerPage, filteredAndSortedTransactions]);
+    const totalPages = Math.ceil(filteredAndSortedTransactions.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentTransactions = filteredAndSortedTransactions.slice(indexOfFirstItem, indexOfLastItem);
 
-    const openDeleteConfirmDialog = (transaction) => {
-        setTransactionToDelete(transaction);
-        setIsDeleteDialogOpen(true);
-    };
+    const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
-    const closeDeleteConfirmDialog = () => {
-        setIsDeleteDialogOpen(false);
-        setTransactionToDelete(null);
-    };
-
-    const handleDeleteTransaction = (transaction) => {
-        dispatch(deleteTransaction(transaction.id, transaction.amount, transaction.type))
-            .then(() => {
-                toast({
-                    title: "Transaction deleted",
-                    status: "success",
-                    duration: 3000,
-                    isClosable: true,
-                });
-            })
-            .catch(error => {
-                dispatch(setError(error.message));
-                toast({
-                    title: "Error deleting transaction",
-                    description: error.message,
-                    status: "error",
-                    duration: 3000,
-                    isClosable: true,
-                });
-            });
-    };
-
-    const confirmDelete = () => {
-        if (transactionToDelete) {
-            handleDeleteTransaction(transactionToDelete);
-            closeDeleteConfirmDialog();
-        }
+    const handleSort = (field) => {
+        setSortField(field);
+        setSortOrder(current => current === 'asc' ? 'desc' : 'asc');
     };
 
     const openTransactionDetails = (transaction) => {
@@ -123,6 +91,58 @@ const TransactionHistory = () => {
                 });
             });
     };
+
+    const handleDeleteTransaction = (transaction) => {
+        dispatch(deleteTransaction(transaction.id, transaction.amount, transaction.type))
+            .then(() => {
+                toast({
+                    title: "Transaction deleted",
+                    status: "success",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            })
+            .catch(error => {
+                dispatch(setError(error.message));
+                toast({
+                    title: "Error deleting transaction",
+                    description: error.message,
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            });
+    };
+
+    const openDeleteConfirmDialog = (transaction) => {
+        setTransactionToDelete(transaction);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const closeDeleteConfirmDialog = () => {
+        setIsDeleteDialogOpen(false);
+        setTransactionToDelete(null);
+    };
+
+    const confirmDelete = () => {
+        if (transactionToDelete) {
+            handleDeleteTransaction(transactionToDelete);
+            closeDeleteConfirmDialog();
+        }
+    };
+
+    const stats = useMemo(() => {
+        return transactions.reduce((acc, transaction) => {
+            if (transaction.type === 'deposit') {
+                acc.totalDeposits += transaction.amount;
+            } else if (transaction.type === 'withdrawal') {
+                acc.totalWithdrawals += transaction.amount;
+            } else if (transaction.type === 'purchase') {
+                acc.totalPurchases += transaction.amount;
+            }
+            return acc;
+        }, { totalDeposits: 0, totalWithdrawals: 0, totalPurchases: 0 });
+    }, [transactions]);
 
     if (loading) {
         return <Box>Loading...</Box>;
@@ -241,7 +261,7 @@ const TransactionHistory = () => {
                                         icon={<DeleteIcon />}
                                         size="sm"
                                         colorScheme="red"
-                                        onClick={() => handleDeleteTransaction(transaction)}
+                                        onClick={() => openDeleteConfirmDialog(transaction)}
                                         aria-label="Delete transaction"
                                     />
                                 </Td>
@@ -289,6 +309,33 @@ const TransactionHistory = () => {
                     </ModalFooter>
                 </ModalContent>
             </Modal>
+
+            <AlertDialog
+                isOpen={isDeleteDialogOpen}
+                leastDestructiveRef={cancelRef}
+                onClose={closeDeleteConfirmDialog}
+            >
+                <AlertDialogOverlay>
+                    <AlertDialogContent>
+                        <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                            Delete Transaction
+                        </AlertDialogHeader>
+
+                        <AlertDialogBody>
+                            Are you sure you want to delete this transaction? This action cannot be undone.
+                        </AlertDialogBody>
+
+                        <AlertDialogFooter>
+                            <Button ref={cancelRef} onClick={closeDeleteConfirmDialog}>
+                                Cancel
+                            </Button>
+                            <Button colorScheme="red" onClick={confirmDelete} ml={3}>
+                                Delete
+                            </Button>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialogOverlay>
+            </AlertDialog>
         </Box>
     );
 };

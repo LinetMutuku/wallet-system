@@ -70,7 +70,7 @@ function Header() {
                             variant="ghost"
                             _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
                         >
-                            Menu
+                            AccountMenu
                         </MenuButton>
                         <MenuList>
                             {menuItems.map((item) => (

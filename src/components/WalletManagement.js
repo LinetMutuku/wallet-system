@@ -67,7 +67,7 @@ const WalletManagement = () => {
         }
     };
 
-    const maxBalance = 10000; // Example max balance
+    const maxBalance = 10000;
     const numericBalance = Number(balance) || 0; // Ensure balance is a number
     const percentage = (numericBalance / maxBalance) * 100;
 

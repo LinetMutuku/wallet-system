@@ -31,8 +31,28 @@ const TransactionHistory = () => {
         dispatch(initializeWallet());
     }, [dispatch]);
 
-    // ... (keep all the existing code here, including filteredAndSortedTransactions,
-    // pagination logic, sorting logic, etc.)
+    const filteredAndSortedTransactions = useMemo(() => {
+        return [...transactions]
+            .filter(transaction =>
+                (transaction.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    transaction.amount.toString().includes(searchTerm) ||
+                    (transaction.item && transaction.item.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                    new Date(transaction.date).toLocaleString().toLowerCase().includes(searchTerm.toLowerCase())) &&
+                (!dateRange.start || new Date(transaction.date) >= new Date(dateRange.start)) &&
+                (!dateRange.end || new Date(transaction.date) <= new Date(dateRange.end))
+            )
+            .sort((a, b) => {
+                if (a[sortField] < b[sortField]) return sortOrder === 'asc' ? -1 : 1;
+                if (a[sortField] > b[sortField]) return sortOrder === 'asc' ? 1 : -1;
+                return 0;
+            });
+    }, [transactions, searchTerm, sortField, sortOrder, dateRange]);
+
+    const currentTransactions = useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return filteredAndSortedTransactions.slice(indexOfFirstItem, indexOfLastItem);
+    }, [currentPage, itemsPerPage, filteredAndSortedTransactions]);
 
     const openDeleteConfirmDialog = (transaction) => {
         setTransactionToDelete(transaction);
@@ -44,98 +64,231 @@ const TransactionHistory = () => {
         setTransactionToDelete(null);
     };
 
+    const handleDeleteTransaction = (transaction) => {
+        dispatch(deleteTransaction(transaction.id, transaction.amount, transaction.type))
+            .then(() => {
+                toast({
+                    title: "Transaction deleted",
+                    status: "success",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            })
+            .catch(error => {
+                dispatch(setError(error.message));
+                toast({
+                    title: "Error deleting transaction",
+                    description: error.message,
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            });
+    };
+
     const confirmDelete = () => {
         if (transactionToDelete) {
-            dispatch(deleteTransaction(transactionToDelete.id, transactionToDelete.amount, transactionToDelete.type))
-                .then(() => {
-                    toast({
-                        title: "Transaction deleted",
-                        status: "success",
-                        duration: 3000,
-                        isClosable: true,
-                    });
-                    closeDeleteConfirmDialog();
-                })
-                .catch(error => {
-                    dispatch(setError(error.message));
-                    toast({
-                        title: "Error deleting transaction",
-                        description: error.message,
-                        status: "error",
-                        duration: 3000,
-                        isClosable: true,
-                    });
-                    closeDeleteConfirmDialog();
-                });
+            handleDeleteTransaction(transactionToDelete);
+            closeDeleteConfirmDialog();
         }
     };
 
-    // ... (keep all the existing code here, including the rest of the component logic)
+    const openTransactionDetails = (transaction) => {
+        setSelectedTransaction(transaction);
+        onOpen();
+    };
+
+    const handleRecurringTransaction = (transaction) => {
+        const action = transaction.type === 'deposit' ? addFunds :
+            transaction.type === 'withdrawal' ? withdrawFunds :
+                makePurchase;
+
+        dispatch(action(transaction.amount, transaction.item))
+            .then(() => {
+                toast({
+                    title: `Recurring ${transaction.type} added`,
+                    status: "success",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            })
+            .catch(error => {
+                dispatch(setError(error.message));
+                toast({
+                    title: `Error adding recurring ${transaction.type}`,
+                    description: error.message,
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            });
+    };
+
+    if (loading) {
+        return <Box>Loading...</Box>;
+    }
 
     return (
         <Box bg="white" p={6} borderRadius="lg" boxShadow="xl">
-            {/* ... (keep all the existing JSX here) */}
+            <VStack spacing={6} align="stretch">
+                <Heading as="h2" size="lg" textAlign="center">Transaction History</Heading>
 
-            <Table variant="simple">
-                <Thead>
-                    {/* ... (keep the existing table header) */}
-                </Thead>
-                <Tbody>
-                    {currentTransactions.map((transaction) => (
-                        <Tr key={transaction.id}>
-                            {/* ... (keep the existing table cells) */}
-                            <Td>
-                                <Button size="sm" onClick={() => openTransactionDetails(transaction)} mr={2}>
-                                    Details
-                                </Button>
-                                <IconButton
-                                    icon={<RepeatIcon />}
-                                    size="sm"
-                                    onClick={() => handleRecurringTransaction(transaction)}
-                                    aria-label="Repeat transaction"
-                                    mr={2}
-                                />
-                                <IconButton
-                                    icon={<DeleteIcon />}
-                                    size="sm"
-                                    colorScheme="red"
-                                    onClick={() => openDeleteConfirmDialog(transaction)}
-                                    aria-label="Delete transaction"
-                                />
-                            </Td>
+                {error && (
+                    <Alert status="error">
+                        <AlertIcon />
+                        {error}
+                    </Alert>
+                )}
+
+                <Flex>
+                    <Input
+                        placeholder="Search transactions..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        width="300px"
+                        mr={4}
+                    />
+                    <Input
+                        type="date"
+                        placeholder="Start Date"
+                        value={dateRange.start}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                        mr={2}
+                    />
+                    <Input
+                        type="date"
+                        placeholder="End Date"
+                        value={dateRange.end}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                        mr={2}
+                    />
+                    <Select
+                        value={itemsPerPage}
+                        onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                        width="150px"
+                    >
+                        <option value={5}>5 per page</option>
+                        <option value={10}>10 per page</option>
+                        <option value={25}>25 per page</option>
+                    </Select>
+                    <Spacer />
+                </Flex>
+
+                <VStack spacing={4} align="stretch">
+                    <Stat>
+                        <StatLabel>Current Balance</StatLabel>
+                        <StatNumber color={balance >= 0 ? "green.500" : "red.500"}>
+                            Kshs {balance.toFixed(2)}
+                        </StatNumber>
+                    </Stat>
+                    <Stat>
+                        <StatLabel>Total Deposits</StatLabel>
+                        <StatNumber color="green.500">Kshs {stats.totalDeposits.toFixed(2)}</StatNumber>
+                    </Stat>
+                    <Stat>
+                        <StatLabel>Total Withdrawals</StatLabel>
+                        <StatNumber color="red.500">Kshs {stats.totalWithdrawals.toFixed(2)}</StatNumber>
+                    </Stat>
+                    <Stat>
+                        <StatLabel>Total Purchases</StatLabel>
+                        <StatNumber color="blue.500">Kshs {stats.totalPurchases.toFixed(2)}</StatNumber>
+                    </Stat>
+                </VStack>
+
+                <Table variant="simple">
+                    <Thead>
+                        <Tr>
+                            <Th cursor="pointer" onClick={() => handleSort('type')}>
+                                Type {sortField === 'type' && (sortOrder === 'asc' ? '▲' : '▼')}
+                            </Th>
+                            <Th cursor="pointer" onClick={() => handleSort('amount')}>
+                                Amount {sortField === 'amount' && (sortOrder === 'asc' ? '▲' : '▼')}
+                            </Th>
+                            <Th cursor="pointer" onClick={() => handleSort('date')}>
+                                Date {sortField === 'date' && (sortOrder === 'asc' ? '▲' : '▼')}
+                            </Th>
+                            <Th>Item</Th>
+                            <Th>Actions</Th>
                         </Tr>
-                    ))}
-                </Tbody>
-            </Table>
+                    </Thead>
+                    <Tbody>
+                        {currentTransactions.map((transaction) => (
+                            <Tr key={transaction.id}>
+                                <Td>
+                                    <Badge colorScheme={transaction.type === 'deposit' ? 'green' : transaction.type === 'purchase' ? 'blue' : 'red'}>
+                                        {transaction.type}
+                                    </Badge>
+                                </Td>
+                                <Td>
+                                    <Text color={transaction.type === 'deposit' ? 'green.500' : transaction.type === 'purchase' ? 'blue.500' : 'red.500'} fontWeight="bold">
+                                        {transaction.type === 'deposit' ? '+' : '-'}Kshs {transaction.amount.toFixed(2)}
+                                    </Text>
+                                </Td>
+                                <Td>{new Date(transaction.date).toLocaleString()}</Td>
+                                <Td>{transaction.item || '-'}</Td>
+                                <Td>
+                                    <Button size="sm" onClick={() => openTransactionDetails(transaction)} mr={2}>
+                                        Details
+                                    </Button>
+                                    <IconButton
+                                        icon={<RepeatIcon />}
+                                        size="sm"
+                                        onClick={() => handleRecurringTransaction(transaction)}
+                                        aria-label="Repeat transaction"
+                                        mr={2}
+                                    />
+                                    <IconButton
+                                        icon={<DeleteIcon />}
+                                        size="sm"
+                                        colorScheme="red"
+                                        onClick={() => handleDeleteTransaction(transaction)}
+                                        aria-label="Delete transaction"
+                                    />
+                                </Td>
+                            </Tr>
+                        ))}
+                    </Tbody>
+                </Table>
 
-            {/* ... (keep all the existing JSX here, including pagination, modals, etc.) */}
+                <HStack justifyContent="center" spacing={4}>
+                    <IconButton
+                        icon={<ChevronLeftIcon />}
+                        onClick={prevPage}
+                        isDisabled={currentPage === 1}
+                        aria-label="Previous page"
+                    />
+                    <Text>Page {currentPage} of {totalPages}</Text>
+                    <IconButton
+                        icon={<ChevronRightIcon />}
+                        onClick={nextPage}
+                        isDisabled={currentPage === totalPages}
+                        aria-label="Next page"
+                    />
+                </HStack>
+            </VStack>
 
-            <AlertDialog
-                isOpen={isDeleteDialogOpen}
-                leastDestructiveRef={cancelRef}
-                onClose={closeDeleteConfirmDialog}
-            >
-                <AlertDialogOverlay>
-                    <AlertDialogContent>
-                        <AlertDialogHeader fontSize="lg" fontWeight="bold">
-                            Delete Transaction
-                        </AlertDialogHeader>
-
-                        <AlertDialogBody>
-                            Are you sure you want to delete this transaction? This action cannot be undone.
-                        </AlertDialogBody>
-
-                        <AlertDialogFooter>
-                            <Button ref={cancelRef} onClick={closeDeleteConfirmDialog}>
-                                Cancel
-                            </Button>
-                            <Button colorScheme="red" onClick={confirmDelete} ml={3}>
-                                Delete
-                            </Button>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialogOverlay>
-            </AlertDialog>
+            <Modal isOpen={isOpen} onClose={onClose}>
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Transaction Details</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        {selectedTransaction && (
+                            <VStack align="stretch" spacing={4}>
+                                <Text><strong>Type:</strong> {selectedTransaction.type}</Text>
+                                <Text><strong>Amount:</strong> Kshs {selectedTransaction.amount.toFixed(2)}</Text>
+                                <Text><strong>Date:</strong> {new Date(selectedTransaction.date).toLocaleString()}</Text>
+                                {selectedTransaction.item && <Text><strong>Item:</strong> {selectedTransaction.item}</Text>}
+                            </VStack>
+                        )}
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button colorScheme="blue" mr={3} onClick={onClose}>
+                            Close
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </Box>
     );
 };
